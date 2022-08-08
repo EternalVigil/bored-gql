@@ -1,4 +1,8 @@
 const { ApolloServer, gql } = require('apollo-server');
+const { RESTDataSource } = require('apollo-datasource-rest');
+const { ApolloServerPluginLandingPageLocalDefault } = require('apollo-server-core');
+
+const boredURL = 'https://www.boredapi.com/api/activity';
 
 // TODO - move typedefs to own file
 const typeDefs = gql`
@@ -13,6 +17,7 @@ const typeDefs = gql`
 
   type Query {
     activities: [Activity]
+    getActivity: Activity
   }
 `;
 
@@ -41,10 +46,35 @@ const mockActivities = [
 const resolvers = {
   Query: {
     activities: () => mockActivities,
+    getActivity: async (_, __, { dataSources }) => dataSources.boredAPI.getActivity(),
   },
 };
 
-const server = new ApolloServer({ typeDefs, resolvers });
+class BoredAPI extends RESTDataSource {
+    constructor() {
+        super();
+        this.baseURL = boredURL;
+    }
+
+    async getActivity() {
+        return this.get('');
+    }
+}
+
+const server = new ApolloServer({ 
+    typeDefs, 
+    resolvers,
+    csrfPrevention: true,
+    cache: 'bounded',
+    plugins: [
+        ApolloServerPluginLandingPageLocalDefault({ embed: true }),
+    ],
+    dataSources: () => {
+        return {
+            boredAPI: new BoredAPI(),
+        };
+    },
+});
 
 server.listen().then(({ url }) => {
   console.log(`🚀  Server ready at ${url}`);
