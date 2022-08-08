@@ -76,6 +76,9 @@ const server = new ApolloServer({
     },
 });
 
+// bypassing expired ssl certificate
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 server.listen().then(({ url }) => {
   console.log(`🚀  Server ready at ${url}`);
 });
